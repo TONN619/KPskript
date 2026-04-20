@@ -1,12 +1,20 @@
-﻿#Persistent
+#Persistent
 SetTitleMatchMode, 2
 CoordMode, ToolTip, Screen
+
+; Проверка на админ права
+if not A_IsAdmin
+{
+    Run *RunAs "%A_ScriptFullPath%"
+    ExitApp
+}
 
 ; --- Глобальные настройки ---
 ShowTooltips := true
 AutoSpaceEnabled := false
 AutoERunning := false
 LagSwitchEnabled := false
+AutoClickerRunning := false  ; Для авто-кликера ЛКМ
 
 ; === Таблица горячих клавиш при запуске ===
 ShowHotkeysTable()
@@ -20,6 +28,7 @@ ShowHotkeysTable() {
     F2 - Авто-E
     F3 - Подсказки ВКЛ/ВЫКЛ
     F4 - Lag Switch (Вкл/Выкл интернет)
+    F5 - Авто-кликер ЛКМ (70 мс)
     ===========================
     ), 10, 10
 }
@@ -72,32 +81,51 @@ ShowF3Status:
 return
 
 ; ========= LAG SWITCH НА F4 =========
-; Отключает и включает интернет по нажатию
 F4::
     LagSwitchEnabled := !LagSwitchEnabled
     Gosub, ToggleInternet
 return
 
 ToggleInternet:
-    ; Указываем имя твоего адаптера (чаще всего "Ethernet" или "Wi-Fi")
-    ; Если не работает, открой cmd -> ipconfig /all и посмотри точное имя
-    adapterName := "Ethernet"
+    adapterName := "Ethernet"  ; Если не работает, поменяй на "Wi-Fi" или своё имя адаптера
 
     if (LagSwitchEnabled) {
-        ; Отключаем интернет
         RunWait, netsh interface set interface "%adapterName%" admin=disable,, hide
         if (ShowTooltips) {
-            ToolTip, Lag Switch: ИНТЕРНЕТ ВЫКЛЮЧЕН (%adapterName%), 10, 90
+            ToolTip, Lag Switch: ИНТЕРНЕТ ВЫКЛЮЧЕН (%adapterName%), 10, 110
             SetTimer, RemoveToolTip, 2000
         }
     } else {
-        ; Включаем обратно
         RunWait, netsh interface set interface "%adapterName%" admin=enable,, hide
         if (ShowTooltips) {
-            ToolTip, Lag Switch: ИНТЕРНЕТ ВКЛЮЧЕН (%adapterName%), 10, 90
+            ToolTip, Lag Switch: ИНТЕРНЕТ ВКЛЮЧЕН (%adapterName%), 10, 110
             SetTimer, RemoveToolTip, 2000
         }
     }
+return
+
+; ========= АВТО-КЛИКЕР НА F5 =========
+F5::
+    AutoClickerRunning := !AutoClickerRunning
+    Gosub, ShowF5Status
+    if (AutoClickerRunning) {
+        SetTimer, AutoClick, 70  ; Задержка 70 мс
+    } else {
+        SetTimer, AutoClick, Off
+    }
+return
+
+ShowF5Status:
+    if (ShowTooltips) {
+        status := AutoClickerRunning ? "ВКЛЮЧЕН" : "ВЫКЛЮЧЕН"
+        ToolTip, Авто-кликер ЛКМ (70 мс) %status%, 10, 130
+        SetTimer, RemoveToolTip, 2000
+    }
+return
+
+; Функция клика левой кнопкой мыши
+AutoClick:
+    Click
 return
 
 ; === Основные функции ===
